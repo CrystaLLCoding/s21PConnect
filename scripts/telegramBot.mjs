@@ -24,6 +24,7 @@ await loadEnv();
 const TOKEN = process.env.TELEGRAM_BOT_TOKEN || '8330190118:AAHyBk-93duHmcg-xdTZuqHP3co3o_xqtcA';
 const BASE_URL = `https://api.telegram.org/bot${TOKEN}`;
 const DB_PATH = path.resolve(__dirname, '../src/data/db.json');
+const WEB_APP_URL = process.env.WEB_APP_URL || 'https://s21-connect-btjjgrwx9-platform-b.vercel.app';
 
 const ADJECTIVES = ['silent', 'quantum', 'matrix', 'zero_leak', 'cyber', 'neon', 'shadow', 'turing', 'hyper', 'crypto'];
 const NOUNS = ['coder', 'pooler', 'cadet', 'sam', 'hacker', 'dev', 'pilot', 'ninja', 'core', 'wizard'];
@@ -81,8 +82,13 @@ async function handleMessage(msg) {
           `🔑 <b>Veb-parol:</b> <code>${existingUser.password_hash}</code>\n` +
           `🏢 <b>Kampus:</b> ${existingUser.campus || 'Tashkent'}\n` +
           `⚡ <b>Ko‘nikmalar:</b> ${existingUser.skills.join(', ')}\n\n` +
-          `🌐 <b>Veb-sayt:</b> http://localhost:3000`,
+          `🌐 <b>Veb-sayt:</b> ${WEB_APP_URL}`,
         parse_mode: 'HTML',
+        reply_markup: {
+          inline_keyboard: [
+            [{ text: '🚀 Veb-Platformaga Kirish', url: WEB_APP_URL }],
+          ],
+        },
       });
       return;
     }
@@ -183,8 +189,13 @@ async function handleCallbackQuery(query) {
           `🔑 <b>Veb-parol:</b> <code>${existing.password_hash}</code>\n` +
           `🏢 <b>Kampus:</b> ${existing.campus || 'Tashkent'}\n` +
           `⚡ <b>Stek:</b> ${existing.skills.join(', ')}\n\n` +
-          `🌐 <b>Veb-sayt:</b> http://localhost:3000`,
+          `🌐 <b>Veb-sayt:</b> ${WEB_APP_URL}`,
         parse_mode: 'HTML',
+        reply_markup: {
+          inline_keyboard: [
+            [{ text: '🚀 Veb-Platformaga Kirish', url: WEB_APP_URL }],
+          ],
+        },
       });
       return;
     }
@@ -289,9 +300,14 @@ async function handleCallbackQuery(query) {
         `🏢 <b>Kampus:</b> ${newUser.campus}\n` +
         `⚡ <b>Stek:</b> ${skill}\n\n` +
         `🔒 <i>Eslatma:</i> Platformada sizning ismingiz va telefon raqamingiz to‘liq yashirin bo‘ladi. Faqat loyiha egasi arizangizni qabul qilganda (Accept) o‘zaro kontaktlar almashiladi.\n\n` +
-        `🌐 <b>Veb-saytga kiring:</b> http://localhost:3000\n` +
+        `🌐 <b>Veb-saytga kiring:</b> ${WEB_APP_URL}\n` +
         `Yuqoridagi anonim nik va parolingiz bilan platformada «Kirish» tugmasini bosing.`,
       parse_mode: 'HTML',
+      reply_markup: {
+        inline_keyboard: [
+          [{ text: '🚀 Veb-Platformaga Kirish', url: WEB_APP_URL }],
+        ],
+      },
     });
   }
 }
