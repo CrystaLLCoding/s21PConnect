@@ -2,8 +2,13 @@ import { NextResponse } from 'next/server';
 import fs from 'fs/promises';
 import path from 'path';
 
-const DB_PATH = path.resolve(process.cwd(), 'src/data/db.json');
+const DEFAULT_DB_PATH = path.resolve(process.cwd(), 'src/data/db.json');
+const VERCEL_DB_PATH = path.resolve('/tmp', 'db.json');
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '8330190118:AAHyBk-93duHmcg-xdTZuqHP3co3o_xqtcA';
+
+function getDbPath() {
+  return process.env.VERCEL ? VERCEL_DB_PATH : DEFAULT_DB_PATH;
+}
 
 interface UserRecord {
   telegram_id: number | string;
@@ -46,16 +51,31 @@ interface DbStructure {
 }
 
 async function getDb(): Promise<DbStructure> {
+  const targetPath = getDbPath();
   try {
-    const raw = await fs.readFile(DB_PATH, 'utf-8');
+    const raw = await fs.readFile(targetPath, 'utf-8');
     return JSON.parse(raw);
   } catch {
-    return { users: [], projects: [], applications: [] };
+    try {
+      const initial = await fs.readFile(DEFAULT_DB_PATH, 'utf-8');
+      const parsed = JSON.parse(initial);
+      if (process.env.VERCEL) {
+        await fs.writeFile(VERCEL_DB_PATH, initial, 'utf-8');
+      }
+      return parsed;
+    } catch {
+      return { users: [], projects: [], applications: [] };
+    }
   }
 }
 
 async function saveDb(data: DbStructure) {
-  await fs.writeFile(DB_PATH, JSON.stringify(data, null, 2), 'utf-8');
+  const targetPath = getDbPath();
+  try {
+    await fs.writeFile(targetPath, JSON.stringify(data, null, 2), 'utf-8');
+  } catch (err) {
+    console.error('Failed to write db:', err);
+  }
 }
 
 async function sendTelegramMessage(chatId: string | number, text: string) {
@@ -66,7 +86,7 @@ async function sendTelegramMessage(chatId: string | number, text: string) {
       body: JSON.stringify({
         chat_id: chatId,
         text,
-        parse_mode: 'Markdown',
+        parse_mode: 'HTML',
       }),
     });
   } catch (err) {
