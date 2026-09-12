@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import fs from 'fs/promises';
 import path from 'path';
+import { isSupabaseConfigured, getSupabase } from '@/lib/supabase';
 
 const DEFAULT_DB_PATH = path.resolve(process.cwd(), 'src/data/db.json');
 const VERCEL_DB_PATH = path.resolve('/tmp', 'db.json');
@@ -96,6 +97,26 @@ async function sendTelegramMessage(chatId: string | number, text: string) {
 }
 
 export async function GET() {
+  if (isSupabaseConfigured()) {
+    try {
+      const supabase = getSupabase()!;
+      const [usersRes, projectsRes, appsRes] = await Promise.all([
+        supabase.from('users').select('*').order('created_at', { ascending: false }),
+        supabase.from('projects').select('*').order('created_at', { ascending: false }),
+        supabase.from('applications').select('*').order('created_at', { ascending: false }),
+      ]);
+      if (usersRes.data && projectsRes.data) {
+        return NextResponse.json({
+          users: usersRes.data,
+          projects: projectsRes.data,
+          applications: appsRes.data || [],
+        });
+      }
+    } catch (err) {
+      console.error('Supabase fetch error, fallback to JSON:', err);
+    }
+  }
+
   const db = await getDb();
   return NextResponse.json(db);
 }
@@ -105,6 +126,27 @@ export async function POST(req: Request) {
   const db = await getDb();
 
   if (body.action === 'register_user') {
+    if (isSupabaseConfigured()) {
+      try {
+        const supabase = getSupabase()!;
+        await supabase.from('users').upsert({
+          telegram_id: body.user.telegram_id,
+          full_name: body.user.full_name,
+          phone_number: body.user.phone_number,
+          telegram_username: body.user.telegram_username || '',
+          anon_nick: body.user.anon_nick,
+          password_hash: body.user.password_hash,
+          skills: body.user.skills || [],
+          interests: body.user.interests || '',
+          campus: body.user.campus || 'Tashkent',
+          level: body.user.level || 'Common Core Lvl 4',
+          avatar: body.user.avatar || '',
+        });
+      } catch (err) {
+        console.error('Supabase register_user error:', err);
+      }
+    }
+
     db.users = db.users.filter((u) => Number(u.telegram_id) !== Number(body.user.telegram_id));
     db.users.push(body.user);
     await saveDb(db);
@@ -112,12 +154,43 @@ export async function POST(req: Request) {
   }
 
   if (body.action === 'add_project') {
+    if (isSupabaseConfigured()) {
+      try {
+        const supabase = getSupabase()!;
+        await supabase.from('projects').upsert({
+          project_id: body.project.project_id,
+          owner_nick: body.project.owner_nick,
+          title: body.project.title,
+          description: body.project.description,
+          needed_roles: body.project.needed_roles || [],
+          status: body.project.status || 'open',
+          campus: body.project.campus || 'Tashkent',
+        });
+      } catch (err) {
+        console.error('Supabase add_project error:', err);
+      }
+    }
+
     db.projects.unshift(body.project);
     await saveDb(db);
     return NextResponse.json({ success: true, projects: db.projects });
   }
 
   if (body.action === 'apply') {
+    if (isSupabaseConfigured()) {
+      try {
+        const supabase = getSupabase()!;
+        await supabase.from('applications').upsert({
+          application_id: body.application.application_id,
+          project_id: body.application.project_id,
+          applicant_nick: body.application.applicant_nick,
+          status: 'pending',
+        });
+      } catch (err) {
+        console.error('Supabase apply error:', err);
+      }
+    }
+
     db.applications.unshift(body.application);
     await saveDb(db);
 
@@ -127,9 +200,9 @@ export async function POST(req: Request) {
       if (owner && owner.telegram_id) {
         await sendTelegramMessage(
           owner.telegram_id,
-          `📬 *Loyihangizga yangi anonim ariza kelib tushdi!*\n\n` +
-          `🚀 *Loyiha:* ${project.title}\n` +
-          `👤 *Nomzod:* @${body.application.applicant_nick}\n\n` +
+          `📬 <b>Loyihangizga yangi anonim ariza kelib tushdi!</b>\n\n` +
+          `🚀 <b>Loyiha:</b> ${project.title}\n` +
+          `👤 <b>Nomzod:</b> @${body.application.applicant_nick}\n\n` +
           `Arizani qabul qilish yoki rad etish uchun platformaga kiring:\n` +
           `${WEB_APP_URL}`
         );
@@ -140,6 +213,15 @@ export async function POST(req: Request) {
   }
 
   if (body.action === 'accept_application') {
+    if (isSupabaseConfigured()) {
+      try {
+        const supabase = getSupabase()!;
+        await supabase.from('applications').update({ status: 'accepted' }).eq('application_id', body.application_id);
+      } catch (err) {
+        console.error('Supabase accept error:', err);
+      }
+    }
+
     const app = db.applications.find((a) => a.application_id === body.application_id);
     if (app) {
       app.status = 'accepted';
@@ -152,12 +234,12 @@ export async function POST(req: Request) {
       if (applicant && applicant.telegram_id && owner) {
         await sendTelegramMessage(
           applicant.telegram_id,
-          `🎉 *Arizangiz qabul qilindi!*\n\n` +
-          `Sizning *"${project?.title}"* loyihasiga yuborgan arizangiz qabul qilindi.\n\n` +
+          `🎉 <b>Arizangiz qabul qilindi!</b>\n\n` +
+          `Sizning <b>"${project?.title}"</b> loyihasiga yuborgan arizangiz qabul qilindi.\n\n` +
           `O‘zaro rozilik (Accept) orqali kontaktlar ochildi:\n` +
-          `👤 *Loyiha egasi:* ${owner.full_name}\n` +
-          `📞 *Telefon:* ${owner.phone_number}\n` +
-          `💬 *Telegram:* @${owner.telegram_username}\n\n` +
+          `👤 <b>Loyiha egasi:</b> ${owner.full_name}\n` +
+          `📞 <b>Telefon:</b> ${owner.phone_number}\n` +
+          `💬 <b>Telegram:</b> @${owner.telegram_username}\n\n` +
           `Bog‘lanish uchun: https://t.me/${owner.telegram_username}`
         );
       }
@@ -166,6 +248,15 @@ export async function POST(req: Request) {
   }
 
   if (body.action === 'reject_application') {
+    if (isSupabaseConfigured()) {
+      try {
+        const supabase = getSupabase()!;
+        await supabase.from('applications').update({ status: 'rejected', reject_reason: body.reason }).eq('application_id', body.application_id);
+      } catch (err) {
+        console.error('Supabase reject error:', err);
+      }
+    }
+
     const app = db.applications.find((a) => a.application_id === body.application_id);
     if (app) {
       app.status = 'rejected';
@@ -178,9 +269,9 @@ export async function POST(req: Request) {
       if (applicant && applicant.telegram_id) {
         await sendTelegramMessage(
           applicant.telegram_id,
-          `ℹ️ *"${project?.title}" loyihasiga yuborilgan ariza*\n\n` +
+          `ℹ️ <b>"${project?.title}" loyihasiga yuborilgan ariza</b>\n\n` +
           `Arizangiz rad etildi.\n` +
-          `*Sabab:* ${body.reason}`
+          `<b>Sabab:</b> ${body.reason}`
         );
       }
     }
