@@ -1,6 +1,7 @@
 import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { createClient } from '@supabase/supabase-js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -25,6 +26,9 @@ const TOKEN = process.env.TELEGRAM_BOT_TOKEN || '8330190118:AAHyBk-93duHmcg-xdTZ
 const BASE_URL = `https://api.telegram.org/bot${TOKEN}`;
 const DB_PATH = path.resolve(__dirname, '../src/data/db.json');
 const WEB_APP_URL = process.env.WEB_APP_URL || 'https://s21-connect.vercel.app';
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+const supabase = (SUPABASE_URL && SUPABASE_KEY) ? createClient(SUPABASE_URL, SUPABASE_KEY) : null;
 
 const ADJECTIVES = ['silent', 'quantum', 'matrix', 'zero_leak', 'cyber', 'neon', 'shadow', 'turing', 'hyper', 'crypto'];
 const NOUNS = ['coder', 'pooler', 'cadet', 'sam', 'hacker', 'dev', 'pilot', 'ninja', 'core', 'wizard'];
@@ -37,6 +41,22 @@ function generateRandomNick() {
 }
 
 async function readDb() {
+  if (supabase) {
+    try {
+      const [uRes, pRes, aRes] = await Promise.all([
+        supabase.from('users').select('*'),
+        supabase.from('projects').select('*'),
+        supabase.from('applications').select('*'),
+      ]);
+      if (uRes.data && pRes.data) {
+        return {
+          users: uRes.data,
+          projects: pRes.data,
+          applications: aRes.data || [],
+        };
+      }
+    } catch {}
+  }
   try {
     const data = await fs.readFile(DB_PATH, 'utf-8');
     return JSON.parse(data);
@@ -46,7 +66,9 @@ async function readDb() {
 }
 
 async function writeDb(db) {
-  await fs.writeFile(DB_PATH, JSON.stringify(db, null, 2), 'utf-8');
+  try {
+    await fs.writeFile(DB_PATH, JSON.stringify(db, null, 2), 'utf-8');
+  } catch {}
 }
 
 async function api(method, params = {}) {
@@ -288,6 +310,14 @@ async function handleCallbackQuery(query) {
     currentDb.users = currentDb.users.filter(u => Number(u.telegram_id) !== Number(session.telegram_id));
     currentDb.users.push(newUser);
     await writeDb(currentDb);
+
+    if (supabase) {
+      try {
+        await supabase.from('users').upsert(newUser);
+      } catch (err) {
+        console.error('Supabase direct write error:', err.message);
+      }
+    }
 
     try {
       await fetch(`${WEB_APP_URL}/api/sync`, {
