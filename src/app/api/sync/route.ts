@@ -104,6 +104,13 @@ export async function POST(req: Request) {
   const body = await req.json();
   const db = await getDb();
 
+  if (body.action === 'register_user') {
+    db.users = db.users.filter((u) => Number(u.telegram_id) !== Number(body.user.telegram_id));
+    db.users.push(body.user);
+    await saveDb(db);
+    return NextResponse.json({ success: true, users: db.users });
+  }
+
   if (body.action === 'add_project') {
     db.projects.unshift(body.project);
     await saveDb(db);

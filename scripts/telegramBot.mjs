@@ -289,6 +289,16 @@ async function handleCallbackQuery(query) {
     currentDb.users.push(newUser);
     await writeDb(currentDb);
 
+    try {
+      await fetch(`${WEB_APP_URL}/api/sync`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'register_user', user: newUser }),
+      });
+    } catch (err) {
+      console.error('Failed to sync user to web app:', err.message);
+    }
+
     userSessions.delete(chatId);
 
     await api('editMessageText', {
