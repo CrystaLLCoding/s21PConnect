@@ -2,6 +2,9 @@
 
 > **School 21 peerlari uchun anonim autentifikatsiya, loyihalar lentalari va o‘zaro rozilik (Accept) orqali jamoa shakllantirish platformasi.**
 
+🌐 **Jonli Platforma:** [https://s21-connect.vercel.app](https://s21-connect.vercel.app)  
+🤖 **Rasmiy Telegram Bot:** [@s21Regbot](https://t.me/s21Regbot)
+
 PeerConnect 21 — School 21 (Toshkent / Samarqand) kadetlari uchun shaxsiy kontaktlarini (ism, telefon raqami, Telegram) oshkor qilmasdan startap loyihalariga jamoa to‘plash, vakansiyalar e’lon qilish va nomzodlarni tanlash imkonini beruvchi zamonaviy veb-platforma.
 
 ---

@@ -5,7 +5,7 @@ import path from 'path';
 const DEFAULT_DB_PATH = path.resolve(process.cwd(), 'src/data/db.json');
 const VERCEL_DB_PATH = path.resolve('/tmp', 'db.json');
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '8330190118:AAHyBk-93duHmcg-xdTZuqHP3co3o_xqtcA';
-const WEB_APP_URL = process.env.WEB_APP_URL || 'https://s21-connect-btjjgrwx9-platform-b.vercel.app';
+const WEB_APP_URL = process.env.WEB_APP_URL || 'https://s21-connect.vercel.app';
 
 function getDbPath() {
   return process.env.VERCEL ? VERCEL_DB_PATH : DEFAULT_DB_PATH;
