@@ -1,0 +1,37 @@
+{
+  "users": [
+    {
+      "telegram_id": 5019943928,
+      "full_name": "ICT",
+      "phone_number": "+998998758647",
+      "telegram_username": "Shokhruxoke",
+      "anon_nick": "silent_core_73",
+      "password_hash": "19892219",
+      "skills": [
+        "AI/ML",
+        "Algorithms"
+      ],
+      "interests": "School 21 Tashkent campus startaplarida ishlash va jamoa tuzish",
+      "campus": "Tashkent",
+      "level": "Common Core Lvl 4",
+      "avatar": "https://api.dicebear.com/7.x/bottts/svg?seed=silent_core_73"
+    }
+  ],
+  "projects": [
+    {
+      "project_id": "proj-1789242250903",
+      "owner_nick": "silent_core_73",
+      "title": "Application for Game",
+      "description": "Ios uchun platforma yaratish batafsil loyihaga qo'shilganingizda tushuntiriladi!",
+      "needed_roles": [
+        "C Backend",
+        "Python",
+        "UI/UX"
+      ],
+      "status": "open",
+      "campus": "Tashkent",
+      "created_at": "2026-09-12"
+    }
+  ],
+  "applications": []
+}
